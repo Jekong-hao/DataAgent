@@ -10,9 +10,9 @@ springdoc:
 # 存储 DataAgent 业务数据的数据库，并非Agent分析数据的来源
 spring:
   datasource:
-    url: ${DATA_AGENT_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/saa_data_agent?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai}
-    username: ${DATA_AGENT_DATASOURCE_USERNAME:root}
-    password: ${DATA_AGENT_DATASOURCE_PASSWORD:root}
+    url: ${DATA_AGENT_DATASOURCE_URL:jdbc:mysql://192.168.48.5:3306/data_agent?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai}
+    username: root
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.alibaba.druid.pool.DruidDataSource
   sql:
@@ -25,7 +25,20 @@ spring:
       encoding: utf-8
   ai:
     vectorstore:
-      type: simple
+      type: pgvector
+      pgvector:
+        datasource:
+          url: ${PGVECTOR_DATASOURCE_URL:jdbc:postgresql://localhost:5432/data_agent}
+          username: ${PGVECTOR_DATASOURCE_USERNAME:postgres}
+          password: ${PGVECTOR_DATASOURCE_PASSWORD:123456}
+          driver-class-name: org.postgresql.Driver
+        initialize-schema: ${PGVECTOR_INITIALIZE_SCHEMA:true}
+        schema-name: ${PGVECTOR_SCHEMA_NAME:public}
+        table-name: ${PGVECTOR_TABLE_NAME:vector_store}
+        dimensions: ${PGVECTOR_DIMENSIONS:1024}
+        distance-type: cosine-distance
+        index-type: hnsw
+        remove-existing-vector-store-table: false
     alibaba:
       data-agent:
         vector-store:
@@ -78,4 +91,3 @@ logging:
     com.alibaba.cloud.ai.dataagent.workflow.node: debug
     com.alibaba.cloud.ai.mapper: debug
     org.springframework.jdbc: debug
-
