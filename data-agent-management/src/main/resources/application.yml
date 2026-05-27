@@ -10,7 +10,7 @@ springdoc:
 # 存储 DataAgent 业务数据的数据库，并非Agent分析数据的来源
 spring:
   datasource:
-    url: ${DATA_AGENT_DATASOURCE_URL:jdbc:mysql://192.168.48.5:3306/data_agent?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai}
+    url: ${DATA_AGENT_DATASOURCE_URL:jdbc:mysql://localhost:3306/data_agent?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai}
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -65,6 +65,8 @@ spring:
             endpoint: ${OSS_ENDPOINT:}
             bucket-name: ${OSS_BUCKET_NAME:}
             custom-domain: ${OSS_CUSTOM_DOMAIN:}
+        skills:
+          local-path: ./agent-skills
         max-sql-retry-count: 10
         # Langfuse 可观测性配置
         langfuse:
@@ -72,6 +74,10 @@ spring:
           host: ${LANGFUSE_HOST:}
           public-key: ${LANGFUSE_PUBLIC_KEY:}
           secret-key: ${LANGFUSE_SECRET_KEY:}
+        agentscope:
+          observability:
+            enabled: ${AGENTSCOPE_OBSERVABILITY_ENABLED:true}
+            use-langfuse-tracer: ${AGENTSCOPE_OBSERVABILITY_USE_LANGFUSE_TRACER:true}
   webflux:
     multipart:
       max-file-size: 10MB
@@ -87,7 +93,7 @@ mybatis:
 # 日志配置
 logging:
   level:
-    com.alibaba.cloud.ai.dataagent.service: debug
-    com.alibaba.cloud.ai.dataagent.workflow.node: debug
+    com.alibaba.cloud.ai.dataagent.management.service: debug
+    com.alibaba.cloud.ai.dataagent.aiagent: debug
     com.alibaba.cloud.ai.mapper: debug
     org.springframework.jdbc: debug

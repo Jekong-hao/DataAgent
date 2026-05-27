@@ -106,7 +106,7 @@ public class BusinessKnowledgeServiceImpl implements BusinessKnowledgeService {
 		catch (Exception e) {
 			String errorMsg = "Failed to add to vector store: " + e.getMessage();
 			entity.setEmbeddingStatus(EmbeddingStatus.FAILED);
-			entity.setErrorMsg(errorMsg);
+			entity.setErrorMsg(truncateErrorMsg(errorMsg));
 			businessKnowledgeMapper.updateById(entity);
 			log.error("Failed to add knowledge to vector store for id: {}, error: {}", entity.getId(), errorMsg);
 		}
@@ -146,11 +146,15 @@ public class BusinessKnowledgeServiceImpl implements BusinessKnowledgeService {
 			// 向量库更新失败，不回滚MySQL，只标记状态为失败
 			String errorMsg = "Failed to update vector store: " + e.getMessage();
 			knowledge.setEmbeddingStatus(EmbeddingStatus.FAILED);
-			knowledge.setErrorMsg(errorMsg);
+			knowledge.setErrorMsg(truncateErrorMsg(errorMsg));
 			businessKnowledgeMapper.updateById(knowledge);
 			log.error("Failed to update vector store for knowledge id: {}, error: {}", id, errorMsg);
 		}
 		return businessKnowledgeConverter.toVo(knowledge);
+	}
+
+	private String truncateErrorMsg(String errorMsg) {
+		return errorMsg != null && errorMsg.length() > 250 ? errorMsg.substring(0, 250) : errorMsg;
 	}
 
 	/**

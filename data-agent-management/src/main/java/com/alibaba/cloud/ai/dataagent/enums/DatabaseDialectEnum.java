@@ -33,7 +33,9 @@ public enum DatabaseDialectEnum {
 
 	ORACLE("Oracle"),
 
-	HIVE("Hive");
+	HIVE("Hive"),
+
+	TRINO("Trino");
 
 	public final String code;
 

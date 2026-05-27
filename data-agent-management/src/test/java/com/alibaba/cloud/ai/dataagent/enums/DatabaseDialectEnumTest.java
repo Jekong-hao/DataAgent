@@ -32,6 +32,7 @@ class DatabaseDialectEnumTest {
 		assertEquals("SqlServer", DatabaseDialectEnum.SQL_SERVER.getCode());
 		assertEquals("Oracle", DatabaseDialectEnum.ORACLE.getCode());
 		assertEquals("Hive", DatabaseDialectEnum.HIVE.getCode());
+		assertEquals("Trino", DatabaseDialectEnum.TRINO.getCode());
 		assertEquals("SQLite", DatabaseDialectEnum.SQLite.getCode());
 	}
 
@@ -56,7 +57,7 @@ class DatabaseDialectEnumTest {
 
 	@Test
 	void testValues() {
-		assertEquals(8, DatabaseDialectEnum.values().length);
+		assertEquals(9, DatabaseDialectEnum.values().length);
 	}
 
 	@Test

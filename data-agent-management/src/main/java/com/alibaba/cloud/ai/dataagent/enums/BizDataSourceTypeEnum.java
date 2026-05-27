@@ -45,6 +45,11 @@ public enum BizDataSourceTypeEnum {
 	 */
 	HIVE(8, "hive", DatabaseDialectEnum.HIVE.getCode(), DbAccessTypeEnum.JDBC.getCode()),
 
+	/**
+	 * Trino database
+	 */
+	TRINO(9, "trino", DatabaseDialectEnum.TRINO.getCode(), DbAccessTypeEnum.JDBC.getCode()),
+
 	HOLOGRESS(10, "hologress", DatabaseDialectEnum.POSTGRESQL.getCode(), DbAccessTypeEnum.JDBC.getCode()),
 
 	MYSQL_VPC(11, "mysql-vpc", DatabaseDialectEnum.MYSQL.getCode(), DbAccessTypeEnum.JDBC.getCode()),

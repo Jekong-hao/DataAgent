@@ -161,6 +161,14 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!-- Trino JDBC 驱动 -->
+        <dependency>
+            <groupId>io.trino</groupId>
+            <artifactId>trino-jdbc</artifactId>
+            <version>481</version>
+            <scope>runtime</scope>
+        </dependency>
       
         <!-- Swagger/OpenAPI 3 with WebFlux (no MVC) -->
         <dependency>

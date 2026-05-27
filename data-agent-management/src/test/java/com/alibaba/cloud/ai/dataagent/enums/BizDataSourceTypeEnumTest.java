@@ -192,6 +192,14 @@ class BizDataSourceTypeEnumTest {
 	}
 
 	@Test
+	void trino_hasCorrectDialect() {
+		assertEquals(9, BizDataSourceTypeEnum.TRINO.getCode());
+		assertEquals("trino", BizDataSourceTypeEnum.TRINO.getTypeName());
+		assertEquals("Trino", BizDataSourceTypeEnum.TRINO.getDialect());
+		assertEquals("jdbc", BizDataSourceTypeEnum.TRINO.getProtocol());
+	}
+
+	@Test
 	void fcMemoryDb_hasFcHttpProtocol() {
 		assertEquals("fc-http", BizDataSourceTypeEnum.FC_MEMORY_DB.getProtocol());
 	}
