@@ -3,12 +3,14 @@ server:
 
 # 存储 DataAgent 业务数据的数据库，并非Agent分析数据的来源
 spring:
+  codec:
+    # Python workflow timelines can contain generated code, result data and the final report.
+    max-in-memory-size: 10MB
   datasource:
     url: jdbc:h2:mem:nl2sql_database;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE
     username: root
     password: root
     driver-class-name: org.h2.Driver
-    type: com.alibaba.druid.pool.DruidDataSource
   sql:
     init:
       mode: always
@@ -31,17 +33,26 @@ spring:
       type: simple
     alibaba:
       data-agent:
+        checkpoint:
+          type: memory
         vector-store:
           table-topk-limit: 10
           table-similarity-threshold: 0.2
           default-topk-limit: 8
           default-similarity-threshold: 0.4
-        llm-service-type: stream
         code-executor:
-          # 运行Python代码的环境（生产环境建议使用docker，不建议使用local）
-          code-pool-executor: local
-          # Python执行的最大重试次数
           python-max-tries-count: 5
+          code-timeout: 60s
+          limit-memory: 500
+          cpu-core: 1
+          sandbox:
+            docker-host: ${DATAAGENT_SANDBOX_DOCKER_HOST:unix:///var/run/docker.sock}
+            image-name: ${DATAAGENT_SANDBOX_IMAGE:agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-base:latest}
+            max-concurrency: 4
+            queue-capacity: 10
+            max-connections: 4096
+            package-index-url: ${DATAAGENT_PYPI_INDEX_URL:https://pypi.org/simple}
+            dependency-install-timeout: 3m
         file:
           type: local
           path-prefix: data-agent
@@ -76,7 +87,7 @@ mybatis:
 # 日志配置
 logging:
   level:
-    com.alibaba.cloud.ai.dataagent.service: debug
-    com.alibaba.cloud.ai.dataagent.workflow.node: debug
-    com.alibaba.cloud.ai.mapper: debug
-    org.springframework.jdbc: debug
+    com.alibaba.cloud.ai.dataagent.service: info
+    com.alibaba.cloud.ai.dataagent.workflow.node: info
+    com.alibaba.cloud.ai.mapper: info
+    org.springframework.jdbc: info

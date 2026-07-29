@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.dataagent.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.dataagent.connector.accessor.AccessorFactory;
 import com.alibaba.cloud.ai.dataagent.connector.pool.DBConnectionPool;
 import com.alibaba.cloud.ai.dataagent.connector.pool.DBConnectionPoolFactory;
-import com.alibaba.cloud.ai.dataagent.entity.AgentDatasource;
 import com.alibaba.cloud.ai.dataagent.entity.Datasource;
 import com.alibaba.cloud.ai.dataagent.entity.LogicalRelation;
 import com.alibaba.cloud.ai.dataagent.enums.ErrorCodeEnum;
@@ -123,6 +122,14 @@ public class DatasourceServiceImpl implements DatasourceService {
 		}
 		datasource.setId(id);
 
+		// 密码为空时保留原密码，避免因前端未传密码导致密码被清空
+		if (datasource.getPassword() == null || datasource.getPassword().isEmpty()) {
+			Datasource existing = datasourceMapper.selectById(id);
+			if (existing != null && existing.getPassword() != null) {
+				datasource.setPassword(existing.getPassword());
+			}
+		}
+		// 兜底：如果密码仍为 null（原有密码也为 null），设为空字符串
 		if (datasource.getPassword() == null) {
 			datasource.setPassword("");
 		}
@@ -188,31 +195,11 @@ public class DatasourceServiceImpl implements DatasourceService {
 		config.setUsername(datasource.getUsername());
 		config.setPassword(datasource.getPassword());
 
-		DBConnectionPool pool = poolFactory.getPoolByType(datasource.getType());
-		if (pool == null) {
-			return false;
-		}
+		DBConnectionPool pool = poolFactory.getPoolByDbType(datasource.getType());
 
 		ErrorCodeEnum result = pool.ping(config);
 		return result == ErrorCodeEnum.SUCCESS;
 
-	}
-
-	@Override
-	@Deprecated
-	public List<AgentDatasource> getAgentDatasource(Long agentId) {
-		List<AgentDatasource> adentDatasources = agentDatasourceMapper.selectByAgentIdWithDatasource(agentId);
-
-		// Manually fill in the data source information (since MyBatis Plus does not
-		// directly support complex join query result mapping)
-		for (AgentDatasource agentDatasource : adentDatasources) {
-			if (agentDatasource.getDatasourceId() != null) {
-				Datasource datasource = datasourceMapper.selectById(agentDatasource.getDatasourceId());
-				agentDatasource.setDatasource(datasource);
-			}
-		}
-
-		return adentDatasources;
 	}
 
 	@Override

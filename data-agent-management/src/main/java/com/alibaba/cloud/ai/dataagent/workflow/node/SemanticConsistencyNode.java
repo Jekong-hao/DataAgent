@@ -16,9 +16,11 @@
 package com.alibaba.cloud.ai.dataagent.workflow.node;
 
 import com.alibaba.cloud.ai.dataagent.util.FluxUtil;
+import com.alibaba.cloud.ai.dataagent.util.SqlUtil;
 import com.alibaba.cloud.ai.dataagent.util.StateUtil;
 import com.alibaba.cloud.ai.dataagent.dto.datasource.SqlRetryDto;
 import com.alibaba.cloud.ai.dataagent.dto.prompt.SemanticConsistencyDTO;
+import com.alibaba.cloud.ai.dataagent.dto.prompt.SemanticConsistencyOutputDTO;
 import com.alibaba.cloud.ai.dataagent.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.dataagent.service.nl2sql.Nl2SqlService;
 import com.alibaba.cloud.ai.graph.GraphResponse;
@@ -28,10 +30,12 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static com.alibaba.cloud.ai.dataagent.constant.Constant.*;
 import static com.alibaba.cloud.ai.dataagent.util.PlanProcessUtil.getCurrentExecutionStepInstruction;
@@ -51,6 +55,9 @@ import static com.alibaba.cloud.ai.dataagent.prompt.PromptHelper.buildMixMacSqlD
 @AllArgsConstructor
 public class SemanticConsistencyNode implements NodeAction {
 
+	private static final BeanOutputConverter<SemanticConsistencyOutputDTO> OUTPUT_CONVERTER = new BeanOutputConverter<>(
+			SemanticConsistencyOutputDTO.class);
+
 	private final Nl2SqlService nl2SqlService;
 
 	@Override
@@ -64,6 +71,11 @@ public class SemanticConsistencyNode implements NodeAction {
 		String sql = StateUtil.getStringValue(state, SQL_GENERATE_OUTPUT);
 		String userQuery = StateUtil.getCanonicalQuery(state);
 
+		Optional<String> structuralValidationError = SqlUtil.findGeneratedSqlValidationError(sql, dialect);
+		if (structuralValidationError.isPresent()) {
+			return buildStructuralValidationFailure(state, sql, structuralValidationError.get());
+		}
+
 		SemanticConsistencyDTO semanticConsistencyDTO = SemanticConsistencyDTO.builder()
 			.dialect(dialect)
 			.sql(sql)
@@ -72,18 +84,26 @@ public class SemanticConsistencyNode implements NodeAction {
 			.userQuery(userQuery)
 			.evidence(evidence)
 			.build();
-		log.info("Starting semantic consistency validation - SQL: {}", sql);
+		log.debug("Starting semantic consistency validation - SQL: {}", sql);
 		Flux<ChatResponse> validationResultFlux = nl2SqlService.performSemanticConsistency(semanticConsistencyDTO);
 
 		Flux<GraphResponse<StreamingOutput>> generator = FluxUtil.createStreamingGeneratorWithMessages(this.getClass(),
 				state, "开始语义一致性校验", "语义一致性校验完成", validationResult -> {
-					boolean isPassed = !validationResult.startsWith("不通过");
-					Map<String, Object> result = buildValidationResult(isPassed, validationResult);
-					log.info("[{}] Semantic consistency validation result: {}, passed: {}",
-							this.getClass().getSimpleName(), validationResult, isPassed);
+					SemanticConsistencyOutputDTO output = OUTPUT_CONVERTER.convert(validationResult);
+					Map<String, Object> result = buildValidationResult(output.isPassed(), output.getReason());
+					log.debug("[{}] Semantic consistency validation result: {}, passed: {}",
+							this.getClass().getSimpleName(), output.getReason(), output.isPassed());
 					return result;
 				}, validationResultFlux);
 
+		return Map.of(SEMANTIC_CONSISTENCY_NODE_OUTPUT, generator);
+	}
+
+	private Map<String, Object> buildStructuralValidationFailure(OverAllState state, String sql, String reason) {
+		log.warn("Generated SQL failed structural validation - reason: {}, SQL: {}", reason, sql);
+		Map<String, Object> result = buildValidationResult(false, reason);
+		Flux<GraphResponse<StreamingOutput>> generator = FluxUtil.createStreamingGeneratorWithMessages(this.getClass(),
+				state, "开始SQL结构校验", "SQL结构校验未通过，准备重新生成", ignored -> result, Flux.empty());
 		return Map.of(SEMANTIC_CONSISTENCY_NODE_OUTPUT, generator);
 	}
 

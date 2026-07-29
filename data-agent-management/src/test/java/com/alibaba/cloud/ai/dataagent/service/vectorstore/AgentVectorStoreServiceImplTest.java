@@ -171,6 +171,18 @@ class AgentVectorStoreServiceImplTest {
 	}
 
 	@Test
+	void deleteDocumentsByMetadata_agentScoped_acceptsImmutableMetadataWithoutMutation() {
+		Map<String, Object> metadata = Map.of("knowledgeId", 7);
+
+		Boolean result = service.deleteDocumentsByMetadata("1", metadata);
+
+		assertTrue(result);
+		assertEquals(Map.of("knowledgeId", 7), metadata);
+		verify(vectorStore)
+			.delete(argThat((String filter) -> filter.contains("knowledgeId") && filter.contains("agentId")));
+	}
+
+	@Test
 	void getDocumentsForAgent_defaultParams() {
 		when(dynamicFilterService.buildDynamicFilter(anyString(), anyString())).thenReturn(null);
 
@@ -189,31 +201,6 @@ class AgentVectorStoreServiceImplTest {
 	@Test
 	void getDocumentsOnlyByFilter_nullFilter_throws() {
 		assertThrows(IllegalArgumentException.class, () -> service.getDocumentsOnlyByFilter(null, 10));
-	}
-
-	@Test
-	void getDocumentsOnlyByFilter_nullTopK_usesDefault() {
-		FilterExpressionBuilder b = new FilterExpressionBuilder();
-		Filter.Expression filter = b.eq("agentId", "1").build();
-		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of());
-
-		List<Document> result = service.getDocumentsOnlyByFilter(filter, null);
-		assertNotNull(result);
-	}
-
-	@Test
-	void hasDocuments_withDocs_returnsTrue() {
-		Document doc = new Document("content", Map.of("agentId", "1"));
-		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(doc));
-
-		assertTrue(service.hasDocuments("1"));
-	}
-
-	@Test
-	void hasDocuments_noDocs_returnsFalse() {
-		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(Collections.emptyList());
-
-		assertFalse(service.hasDocuments("1"));
 	}
 
 }

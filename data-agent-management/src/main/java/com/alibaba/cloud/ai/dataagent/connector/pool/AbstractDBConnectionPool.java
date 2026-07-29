@@ -37,7 +37,20 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 	/**
 	 * DataSource cache to ensure that each configuration creates DataSource only once.
 	 */
-	private static final ConcurrentHashMap<String, DataSource> DATA_SOURCE_CACHE = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<DataSourceCacheKey, DataSource> DATA_SOURCE_CACHE = new ConcurrentHashMap<>();
+
+	private record DataSourceCacheKey(String url, String username, String password, String driver) {
+	}
+
+	private final ConnectionRetryPolicy retryPolicy;
+
+	protected AbstractDBConnectionPool() {
+		this(ConnectionRetryPolicy.defaults());
+	}
+
+	protected AbstractDBConnectionPool(ConnectionRetryPolicy retryPolicy) {
+		this.retryPolicy = Objects.requireNonNull(retryPolicy, "retryPolicy");
+	}
 
 	/**
 	 * Driver
@@ -55,6 +68,12 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 
 	public ErrorCodeEnum ping(DbConfigBO config) {
 		String jdbcUrl = config.getUrl();
+		// H2 内嵌数据库允许空密码，其他数据库类型必须配置密码
+		boolean isH2 = "h2".equalsIgnoreCase(config.getConnectionType());
+		if (!isH2 && (config.getPassword() == null || config.getPassword().isEmpty())) {
+			log.error("test db connection skipped: password is empty, url:{}", jdbcUrl);
+			return ErrorCodeEnum.PASSWORD_EMPTY;
+		}
 		try (Connection connection = DriverManager.getConnection(jdbcUrl, config.getUsername(), config.getPassword());
 				Statement stmt = connection.createStatement();) {
 			if (BizDataSourceTypeEnum.isPgDialect(config.getConnectionType())) {
@@ -81,24 +100,24 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 	public Connection getConnection(DbConfigBO config) {
 
 		String jdbcUrl = config.getUrl();
-		int maxRetries = 3;
-		int retryDelay = 1000; // 1 second
+		int maxAttempts = retryPolicy.maxAttempts();
 
-		for (int attempt = 1; attempt <= maxRetries; attempt++) {
+		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
 				// Generate cache key based on connection parameters
-				String cacheKey = generateCacheKey(jdbcUrl, config.getUsername(), config.getPassword());
+				DataSourceCacheKey cacheKey = generateCacheKey(jdbcUrl, config.getUsername(), config.getPassword());
 
 				// Use computeIfAbsent to ensure thread safety and avoid duplicate
 				// DataSource
 				// creation
 				DataSource dataSource = DATA_SOURCE_CACHE.computeIfAbsent(cacheKey, key -> {
 					try {
-						log.debug("Creating new DataSource for key: {}", key);
+						log.debug("Creating new DataSource for URL: {}, username: {}", jdbcUrl, config.getUsername());
 						return createdDataSource(jdbcUrl, config.getUsername(), config.getPassword());
 					}
 					catch (Exception e) {
-						log.error("Failed to create DataSource for key: {}", key, e);
+						log.error("Failed to create DataSource for URL: {}, username: {}", jdbcUrl,
+								config.getUsername(), e);
 						throw new RuntimeException("Failed to create DataSource", e);
 					}
 				});
@@ -116,18 +135,20 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 			catch (Exception e) {
 				log.warn("Attempt {} to get database connection failed: {}", attempt, e.getMessage());
 
-				if (attempt == maxRetries) {
-					log.error("Failed to get database connection after {} attempts, URL: {}", maxRetries, jdbcUrl, e);
-					throw new RuntimeException("Failed to get database connection after " + maxRetries + " attempts",
+				if (attempt == maxAttempts) {
+					log.error("Failed to get database connection after {} attempts, URL: {}", maxAttempts, jdbcUrl, e);
+					throw new RuntimeException("Failed to get database connection after " + maxAttempts + " attempts",
 							e);
 				}
 
-				// Wait before retry with exponential backoff
+				// Wait before retry with incremental backoff
 				try {
-					Thread.sleep((long) retryDelay * attempt);
+					retryPolicy.pauseAfterFailure(attempt);
 				}
-				catch (InterruptedException ignore) {
-
+				catch (InterruptedException interruptedException) {
+					Thread.currentThread().interrupt();
+					throw new IllegalStateException("Interrupted while retrying database connection",
+							interruptedException);
 				}
 			}
 		}
@@ -141,8 +162,8 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 	 * @param password the database password
 	 * @return the cache key
 	 */
-	private String generateCacheKey(String url, String username, String password) {
-		return url + "|" + username + "|" + Objects.hashCode(password);
+	private DataSourceCacheKey generateCacheKey(String url, String username, String password) {
+		return new DataSourceCacheKey(url, username, password, getDriver());
 	}
 
 	@Override

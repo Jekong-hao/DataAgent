@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -61,7 +62,7 @@ public class ModelConfigDataServiceImpl implements ModelConfigDataService {
 
 	@Override
 	public List<ModelConfigDTO> listConfigs() {
-		return modelConfigMapper.findAll().stream().map(ModelConfigConverter::toDTO).collect(Collectors.toList());
+		return modelConfigMapper.findAll().stream().map(ModelConfigConverter::toMaskedDTO).collect(Collectors.toList());
 	}
 
 	@Override
@@ -74,7 +75,9 @@ public class ModelConfigDataServiceImpl implements ModelConfigDataService {
 	private void clean(ModelConfigDTO dto) {
 		dto.setModelName(dto.getModelName().trim());
 		dto.setBaseUrl(dto.getBaseUrl().trim());
-		dto.setApiKey(dto.getApiKey().trim());
+		if (dto.getApiKey() != null) {
+			dto.setApiKey(dto.getApiKey().trim());
+		}
 		if (dto.getCompletionsPath() != null) {
 			dto.setCompletionsPath(dto.getCompletionsPath().trim());
 		}
@@ -123,10 +126,12 @@ public class ModelConfigDataServiceImpl implements ModelConfigDataService {
 		oldEntity.setProxyHost(dto.getProxyHost());
 		oldEntity.setProxyPort(dto.getProxyPort());
 		oldEntity.setProxyUsername(dto.getProxyUsername());
-		oldEntity.setProxyPassword(dto.getProxyPassword());
+		if (dto.getProxyPassword() != null && !dto.getProxyPassword().contains("****")) {
+			oldEntity.setProxyPassword(dto.getProxyPassword());
+		}
 
 		// 只有当前端传来的 Key 不包含 "****" 时，才说明用户真的改了 Key，否则保持原样
-		if (dto.getApiKey() != null && !dto.getApiKey().contains("****")) {
+		if (StringUtils.hasText(dto.getApiKey()) && !dto.getApiKey().contains("****")) {
 			oldEntity.setApiKey(dto.getApiKey());
 		}
 	}

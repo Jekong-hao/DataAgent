@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.dataagent.properties;
 
 import com.alibaba.cloud.ai.dataagent.constant.Constant;
-import com.alibaba.cloud.ai.dataagent.service.llm.LlmServiceEnum;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -25,8 +24,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 @ConfigurationProperties(prefix = Constant.PROJECT_PROPERTIES_PREFIX)
 public class DataAgentProperties {
-
-	private LlmServiceEnum llmServiceType = LlmServiceEnum.STREAM;
 
 	/**
 	 * spring.ai.alibaba.data-agent.embedding-batch.encoding-type=cl100k_base
@@ -76,9 +73,9 @@ public class DataAgentProperties {
 	private boolean enableSqlResultChart = true;
 
 	/**
-	 * 执行SQL结果图表化超时时间，默认3000ms
+	 * 执行SQL结果图表化超时时间，默认15000ms。结构化输出可能触发 Spring AI 自动修复重试，过短的超时会取消仍在运行的模型请求。
 	 */
-	private Long enrichSqlResultTimeout = 3000L;
+	private Long enrichSqlResultTimeout = 15000L;
 
 	@Getter
 	@Setter
@@ -281,9 +278,21 @@ public class DataAgentProperties {
 		private int batchDelTopkLimit = 5000;
 
 		/**
+		 * Expected embedding dimension for the configured persistent vector store. A
+		 * value of 0 disables the check, which is useful for the development-only simple
+		 * store.
+		 */
+		private int embeddingDimension = 0;
+
+		/**
 		 * 是否启用混合搜索
 		 */
 		private boolean enableHybridSearch = false;
+
+		/**
+		 * Maximum wait for each hybrid retrieval branch.
+		 */
+		private long hybridSearchTimeoutMs = 3000;
 
 		/**
 		 * Elasticsearch最小分数阈值，用于es执行关键词搜索时过滤相关性较低的文档

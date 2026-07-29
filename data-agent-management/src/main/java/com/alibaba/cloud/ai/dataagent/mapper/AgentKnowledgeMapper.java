@@ -35,6 +35,11 @@ public interface AgentKnowledgeMapper {
 			""")
 	AgentKnowledge selectByIdIncludeDeleted(@Param("id") Integer id);
 
+	@Select("""
+			SELECT * FROM agent_knowledge WHERE agent_id = #{agentId} ORDER BY id
+			""")
+	List<AgentKnowledge> selectByAgentIdIncludeDeleted(@Param("agentId") Integer agentId);
+
 	@Insert("""
 
 			INSERT INTO agent_knowledge (agent_id, title, content, type, question, is_recall, embedding_status, source_filename, file_path, file_size, file_type, splitter_type, is_deleted, is_resource_cleaned, created_time, updated_time)
@@ -113,6 +118,29 @@ public interface AgentKnowledgeMapper {
 	List<Integer> selectRecalledKnowledgeIds(@Param("agentId") Integer agentId);
 
 	/**
+	 * Query all agent knowledge records that are pending embedding and marked for recall.
+	 * Used by startup auto-embedding to fix seed data inserted via data.sql with
+	 * embedding_status='PENDING'.
+	 */
+	@Select("""
+			SELECT * FROM agent_knowledge
+			WHERE embedding_status = 'PENDING'
+			  AND is_recall = 1
+			  AND is_deleted = 0
+			ORDER BY id
+			""")
+	List<AgentKnowledge> selectPendingAndRecalled();
+
+	@Update("""
+			UPDATE agent_knowledge
+			SET embedding_status = 'PENDING', error_msg = 'Recovered stale PROCESSING job', updated_time = NOW()
+			WHERE embedding_status = 'PROCESSING'
+			  AND is_deleted = 0
+			  AND updated_time < #{beforeTime}
+			""")
+	int resetStaleProcessing(@Param("beforeTime") LocalDateTime beforeTime);
+
+	/**
 	 * 查询待清理的“僵尸”记录 条件：is_deleted = 1 AND is_resource_cleaned = 0 AND updated_time <(当前时间
 	 * - N分钟)
 	 */
@@ -124,5 +152,10 @@ public interface AgentKnowledgeMapper {
 			    LIMIT #{limit}
 			""")
 	List<AgentKnowledge> selectDirtyRecords(@Param("beforeTime") LocalDateTime beforeTime, @Param("limit") int limit);
+
+	@Delete("""
+			DELETE FROM agent_knowledge WHERE agent_id = #{agentId}
+			""")
+	int deleteByAgentId(@Param("agentId") Integer agentId);
 
 }

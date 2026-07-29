@@ -84,6 +84,10 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
@@ -114,6 +118,11 @@
             <version>3.1.3</version>
             <scope>runtime</scope>
             <exclusions>
+                <!-- JDBC 客户端不需要 Hive LLAP 服务端，且其 HBase 链路会引入已失效的 java.net 仓库 -->
+                <exclusion>
+                    <groupId>org.apache.hive</groupId>
+                    <artifactId>hive-llap-server</artifactId>
+                </exclusion>
                 <!-- 排除 Jetty 相关依赖，避免与 Tomcat 冲突 -->
                 <exclusion>
                     <groupId>org.eclipse.jetty.aggregate</groupId>
@@ -264,6 +273,20 @@
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
             <version>${spring-ai-alibaba.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-sandbox</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.tomlj</groupId>
+            <artifactId>tomlj</artifactId>
+            <version>${tomlj.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
+        </dependency>
         <!--文本分割策略:递归和句子分割-->
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
@@ -286,6 +309,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
 
         <dependency>
@@ -294,7 +326,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.atlassian.commonmark</groupId>
+            <groupId>org.commonmark</groupId>
             <artifactId>commonmark</artifactId>
         </dependency>
 
@@ -313,16 +345,16 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-vector-store-elasticsearch</artifactId>
         </dependency>
-        <!-- 显式添加Elasticsearch Java客户端依赖以解决DenseVectorSimilarity类缺失问题 -->
+        <!-- Milvus 向量数据库 -->
         <dependency>
-            <groupId>co.elastic.clients</groupId>
-            <artifactId>elasticsearch-java</artifactId>
-            <version>${elasticsearch-client.version}</version>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-vector-store-milvus</artifactId>
         </dependency>
+        <!-- Protobuf for Milvus -->
         <dependency>
-            <groupId>org.elasticsearch.client</groupId>
-            <artifactId>elasticsearch-rest-client</artifactId>
-            <version>${elasticsearch-client.version}</version>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.25.5</version>
         </dependency>
 
         <!-- 例如：引入 PGvector -->
@@ -360,16 +392,6 @@
             <artifactId>easyexcel</artifactId>
             <version>3.3.4</version>
         </dependency>
-        <!-- Docker Java Client -->
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-transport-zerodep</artifactId>
-        </dependency>
-
     </dependencies>
     <repositories>
         <repository>
@@ -400,6 +422,7 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco-maven-plugin.version}</version>
                 <configuration>
+                    <skip>${skipTests}</skip>
                     <excludes>
                         <exclude>**/excel/**/*.class</exclude>
                         <exclude>**/*.xlsx</exclude>
@@ -427,7 +450,31 @@
                         <configuration>
                             <rules>
                                 <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.75</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.69</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                                <rule>
                                     <element>PACKAGE</element>
+                                    <includes>
+                                        <include>com.alibaba.cloud.ai.dataagent.security</include>
+                                        <include>com.alibaba.cloud.ai.dataagent.service.aimodelconfig</include>
+                                        <include>com.alibaba.cloud.ai.dataagent.service.knowledge</include>
+                                        <include>com.alibaba.cloud.ai.dataagent.connector.accessor</include>
+                                        <include>com.alibaba.cloud.ai.dataagent.connector.ddl</include>
+                                        <include>com.alibaba.cloud.ai.dataagent.connector.pool</include>
+                                        <include>com.alibaba.cloud.ai.dataagent.service.datasource.handler.registry</include>
+                                    </includes>
                                     <limits>
                                         <limit>
                                             <counter>LINE</counter>
