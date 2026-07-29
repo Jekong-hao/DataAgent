@@ -369,10 +369,10 @@
           </el-col>
           <el-col :span="12">
             <div class="form-item">
-              <label>密码 *</label>
+              <label>密码</label>
               <el-input
                 v-model="newDatasource.password"
-                placeholder="请输入数据库密码"
+                placeholder="请输入数据库密码，可为空"
                 size="large"
                 show-password
               />
@@ -506,10 +506,10 @@
       </el-col>
       <el-col :span="12">
         <div class="form-item">
-          <label>密码 *</label>
+          <label>密码</label>
           <el-input
             v-model="editingDatasource.password"
-            placeholder="请输入数据库密码"
+            placeholder="请输入数据库密码，可为空"
             size="large"
             show-password
           />
@@ -1434,12 +1434,13 @@
           errors.push('用户名不能为空');
         }
 
-        if (!datasourceForm.password || datasourceForm.password.trim() === '') {
-          errors.push('密码不能为空');
-        }
-
         return errors;
       };
+
+      const normalizeDatasourcePayload = (datasourceForm: Datasource): Datasource => ({
+        ...datasourceForm,
+        password: datasourceForm.password ?? '',
+      });
 
       const createNewDatasource = async () => {
         const needsSchema =
@@ -1459,7 +1460,7 @@
             newDatasource.value.databaseName = `${newDatasource.value.databaseName}|${schemaName.value}`;
           }
           const datasource: Datasource = await datasourceService.createDatasource(
-            newDatasource.value,
+            normalizeDatasourcePayload(newDatasource.value),
           );
           const id = datasource.id;
           if (id === null || id === undefined) {
@@ -1513,7 +1514,7 @@
           }
           const response: Datasource = await datasourceService.updateDatasource(
             editingDatasource.value.id!,
-            editingDatasource.value,
+            normalizeDatasourcePayload(editingDatasource.value),
           );
           if (response && response.id) {
             ElMessage.success('修改成功！');

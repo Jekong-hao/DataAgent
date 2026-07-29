@@ -95,6 +95,34 @@ CREATE TABLE IF NOT EXISTS `agent_knowledge` (
 ) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=DYNAMIC COMMENT='智能体知识源管理表 (支持文档、QA、FAQ)';
 
 
+-- DataAgent 登录用户表
+CREATE TABLE IF NOT EXISTS data_agent_user (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+  login_name VARCHAR(255) NOT NULL COMMENT 'LDAP登录名',
+  mobile VARCHAR(64) DEFAULT NULL COMMENT '手机号',
+  mail VARCHAR(255) DEFAULT NULL COMMENT '邮箱',
+  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  is_deleted INT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_data_agent_user_login_name (login_name),
+  INDEX idx_data_agent_user_is_deleted (is_deleted)
+) ENGINE = InnoDB COMMENT = 'DataAgent登录用户表';
+
+-- DataAgent 登录 token 表
+CREATE TABLE IF NOT EXISTS data_agent_user_token (
+  user_id BIGINT NOT NULL COMMENT '用户ID',
+  login_name VARCHAR(255) NOT NULL COMMENT 'LDAP登录名',
+  token VARCHAR(512) NOT NULL COMMENT '登录token',
+  expire_time TIMESTAMP NOT NULL COMMENT '过期时间',
+  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (user_id),
+  UNIQUE KEY uk_data_agent_user_token_token (token),
+  INDEX idx_data_agent_user_token_expire_time (expire_time),
+  CONSTRAINT fk_data_agent_user_token_user FOREIGN KEY (user_id) REFERENCES data_agent_user(id) ON DELETE CASCADE
+) ENGINE = InnoDB COMMENT = 'DataAgent登录token表';
+
 -- 数据源表
 CREATE TABLE IF NOT EXISTS datasource (
   id INT NOT NULL AUTO_INCREMENT,

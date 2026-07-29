@@ -231,7 +231,9 @@
         if (sessionEventSource.value) {
           sessionEventSource.value.close();
         }
-        const source = new EventSource(`/api/agent/${currentAgentId}/sessions/stream`);
+        const token = localStorage.getItem('data_agent_token') || '';
+        const query = token ? `?data_agent_access_token=${encodeURIComponent(token)}` : '';
+        const source = new EventSource(`/api/agent/${currentAgentId}/sessions/stream${query}`);
         source.addEventListener('title-updated', event => {
           try {
             const data = JSON.parse((event as MessageEvent<string>).data) as SessionUpdateEvent;

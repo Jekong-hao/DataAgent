@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.dataagent.config;
 
 import com.alibaba.cloud.ai.dataagent.properties.AgentSkillProperties;
+import com.alibaba.cloud.ai.dataagent.properties.AuthProperties;
 import com.alibaba.cloud.ai.dataagent.properties.CodeExecutorProperties;
 import com.alibaba.cloud.ai.dataagent.properties.DataAgentProperties;
 import com.alibaba.cloud.ai.dataagent.properties.FileStorageProperties;
@@ -75,7 +76,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Configuration
 @EnableAsync
 @EnableConfigurationProperties({ DataAgentProperties.class, FileStorageProperties.class, CodeExecutorProperties.class,
-		AgentSkillProperties.class })
+		AgentSkillProperties.class, AuthProperties.class })
 public class DataAgentConfiguration implements DisposableBean {
 
 	/**

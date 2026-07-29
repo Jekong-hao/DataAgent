@@ -62,6 +62,17 @@ spring:
           host: ${LANGFUSE_HOST:}
           public-key: ${LANGFUSE_PUBLIC_KEY:}
           secret-key: ${LANGFUSE_SECRET_KEY:}
+        auth:
+          ldap:
+            enabled: ${DATA_AGENT_LDAP_ENABLED:false}
+            url: ${DATA_AGENT_LDAP_URL:}
+            base-dn: ${DATA_AGENT_LDAP_BASE_DN:}
+            factory: ${DATA_AGENT_LDAP_FACTORY:com.sun.jndi.ldap.LdapCtxFactory}
+            filter: ${DATA_AGENT_LDAP_FILTER:account}
+            security:
+              authentication: ${DATA_AGENT_LDAP_SECURITY_AUTHENTICATION:simple}
+              principal: ${DATA_AGENT_LDAP_SECURITY_PRINCIPAL:}
+              credentials: ${DATA_AGENT_LDAP_SECURITY_CREDENTIALS:}
   servlet:
     multipart:
       max-file-size: 10MB

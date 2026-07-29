@@ -36,6 +36,9 @@ cd spring-ai-alibaba-data-agent
    ```bash
    cd data-agent-management
    ./mvnw spring-boot:run
+
+   # 使用 dev 测试环境启动（与正式配置一致，LDAP 使用 hua-emr 测试配置）
+   ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
    ```
 
 ### 前端开发环境
@@ -49,6 +52,9 @@ cd spring-ai-alibaba-data-agent
 2. **启动开发服务器**
    ```bash
    npm run dev
+
+   # 使用 test mode，代理目标读取 .env.test
+   npm run dev:test
    ```
 
 3. **访问应用**

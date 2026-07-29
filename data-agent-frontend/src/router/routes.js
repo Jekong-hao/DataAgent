@@ -16,6 +16,16 @@
 
 // 路由模块化配置
 const routes = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/Login.vue'),
+    meta: {
+      title: '登录',
+      public: true,
+    },
+  },
+
   // 首页重定向
   {
     path: '/',
@@ -69,6 +79,15 @@ const routes = [
     meta: {
       title: '模型配置',
       module: 'config',
+    },
+  },
+  {
+    path: '/users',
+    name: 'UserManagement',
+    component: () => import('@/views/UserManagement.vue'),
+    meta: {
+      title: '用户管理',
+      module: 'user',
     },
   },
 

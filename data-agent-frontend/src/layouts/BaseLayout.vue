@@ -32,7 +32,21 @@
               <i class="bi bi-gear"></i>
               <span>模型配置</span>
             </div>
+            <div class="nav-item" :class="{ active: isUserManagementPage() }" @click="goToUserManagement">
+              <i class="bi bi-people"></i>
+              <span>用户管理</span>
+            </div>
           </nav>
+        </div>
+        <div class="user-section">
+          <div class="user-chip" v-if="currentUser">
+            <i class="bi bi-person-circle"></i>
+            <span>{{ currentUser.loginName }}</span>
+          </div>
+          <el-button link class="logout-button" @click="logout">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>退出</span>
+          </el-button>
         </div>
       </div>
     </header>
@@ -45,12 +59,16 @@
 </template>
 
 <script>
+  import { computed } from 'vue';
   import { useRouter } from 'vue-router';
+  import { ElMessage } from 'element-plus';
+  import authService from '@/services/auth';
 
   export default {
     name: 'BaseLayout',
     setup() {
       const router = useRouter();
+      const currentUser = computed(() => authService.getStoredUser());
 
       // 导航方法
       const goToAgentList = () => {
@@ -59,6 +77,10 @@
 
       const goToModelConfig = () => {
         router.push('/model-config');
+      };
+
+      const goToUserManagement = () => {
+        router.push('/users');
       };
 
       const isAgentPage = () => {
@@ -74,11 +96,25 @@
         return router.currentRoute.value.name === 'ModelConfig';
       };
 
+      const isUserManagementPage = () => {
+        return router.currentRoute.value.name === 'UserManagement';
+      };
+
+      const logout = async () => {
+        await authService.logout();
+        ElMessage.success('已退出登录');
+        router.replace('/login');
+      };
+
       return {
         goToAgentList,
         goToModelConfig,
+        goToUserManagement,
         isAgentPage,
         isModelConfigPage,
+        isUserManagementPage,
+        currentUser,
+        logout,
       };
     },
   };
@@ -112,6 +148,42 @@
     display: flex;
     align-items: center;
     gap: 2rem;
+  }
+
+  .user-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2rem;
+    padding: 0 0.75rem;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.875rem;
+    max-width: 220px;
+  }
+
+  .user-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .logout-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: #64748b;
+  }
+
+  .logout-button:hover {
+    color: #0369a1;
   }
 
   .brand-logo {

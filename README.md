@@ -78,9 +78,15 @@ mysql -u root -p < data-agent-management/src/main/resources/sql/schema.sql
 cd data-agent-management
 ./mvnw spring-boot:run
 
+# 使用 dev 测试环境启动后端（与正式配置一致，LDAP 使用 hua-emr 测试配置）
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+
 # 3. 启动前端
 cd data-agent-frontend
 npm install && npm run dev
+
+# 使用 test mode 启动前端，后端代理读取 .env.test
+npm run dev:test
 ```
 
 ### 3. 访问系统

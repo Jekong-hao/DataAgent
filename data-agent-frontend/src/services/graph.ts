@@ -57,6 +57,8 @@ export enum TextType {
 }
 
 const API_BASE_URL = '/api';
+const AUTH_TOKEN_HEADER = 'data_agent_access_token';
+const AUTH_TOKEN_STORAGE_KEY = 'data_agent_token';
 
 class GraphService {
   /**
@@ -91,6 +93,10 @@ class GraphService {
       params.append('humanFeedbackContent', request.humanFeedbackContent);
     }
     params.append('rejectedPlan', request.rejectedPlan.toString());
+    const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || '';
+    if (token) {
+      params.append(AUTH_TOKEN_HEADER, token);
+    }
 
     const url = `${API_BASE_URL}/stream/search?${params.toString()}`;
 

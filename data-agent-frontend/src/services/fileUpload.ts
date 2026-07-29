@@ -25,6 +25,9 @@ interface UploadResponse {
   url?: string;
 }
 
+const AUTH_TOKEN_HEADER = 'data_agent_access_token';
+const AUTH_TOKEN_STORAGE_KEY = 'data_agent_token';
+
 // 文件上传API
 export const fileUploadApi = {
   // 上传头像
@@ -33,8 +36,10 @@ export const fileUploadApi = {
     formData.append('file', file);
 
     const url = '/api/upload/avatar';
+    const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || '';
     return fetch(url, {
       method: 'POST',
+      headers: token ? { [AUTH_TOKEN_HEADER]: token } : undefined,
       body: formData,
     }).then(async response => {
       if (!response.ok) {
