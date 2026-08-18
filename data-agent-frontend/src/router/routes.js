@@ -90,7 +90,6 @@ const routes = [
       module: 'user',
     },
   },
-
   // 404页面
   {
     path: '/:pathMatch(.*)*',

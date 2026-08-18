@@ -51,17 +51,19 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  if (!authService.getToken()) {
-    next({ path: '/login', query: { redirect: to.fullPath } });
-    return;
-  }
+  if (await authService.isEnabled()) {
+    if (!authService.getToken()) {
+      next({ path: '/login', query: { redirect: to.fullPath } });
+      return;
+    }
 
-  try {
-    await authService.fetchCurrentUser();
-  } catch (error) {
-    authService.clearSession();
-    next({ path: '/login', query: { redirect: to.fullPath } });
-    return;
+    try {
+      await authService.fetchCurrentUser();
+    } catch (error) {
+      authService.clearSession();
+      next({ path: '/login', query: { redirect: to.fullPath } });
+      return;
+    }
   }
 
   if (to.path === '/model-config') {

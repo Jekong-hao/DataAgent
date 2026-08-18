@@ -63,6 +63,8 @@ spring:
           public-key: ${LANGFUSE_PUBLIC_KEY:}
           secret-key: ${LANGFUSE_SECRET_KEY:}
         auth:
+          token-ttl-hours: ${DATA_AGENT_AUTH_TOKEN_TTL_HOURS:24}
+          admins: ${DATA_AGENT_AUTH_ADMINS:}
           ldap:
             enabled: ${DATA_AGENT_LDAP_ENABLED:false}
             url: ${DATA_AGENT_LDAP_URL:}

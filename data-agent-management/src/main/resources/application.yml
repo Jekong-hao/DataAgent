@@ -79,6 +79,8 @@ spring:
             enabled: ${AGENTSCOPE_OBSERVABILITY_ENABLED:true}
             use-langfuse-tracer: ${AGENTSCOPE_OBSERVABILITY_USE_LANGFUSE_TRACER:true}
         auth:
+          token-ttl-hours: ${DATA_AGENT_AUTH_TOKEN_TTL_HOURS:24}
+          admins: ${DATA_AGENT_AUTH_ADMINS:}
           ldap:
             enabled: ${DATA_AGENT_LDAP_ENABLED:false}
             url: ${DATA_AGENT_LDAP_URL:}

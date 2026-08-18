@@ -319,12 +319,17 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <div class="form-item">
-              <label v-if="newDatasource.type === 'postgresql'">数据库名 *</label>
+              <label v-if="newDatasource.type === 'trino'">Catalog *</label>
+              <label v-else-if="newDatasource.type === 'postgresql'">数据库名 *</label>
               <label v-else>数据库名 *</label>
               <el-input
                 v-model="newDatasource.databaseName"
                 :placeholder="
-                  newDatasource.type === 'postgresql' ? '例如：postgres' : '请输入数据库名称'
+                  newDatasource.type === 'trino'
+                    ? '例如：hive'
+                    : newDatasource.type === 'postgresql'
+                      ? '例如：postgres'
+                      : '请输入数据库名称'
                 "
                 size="large"
               />
@@ -332,13 +337,13 @@
           </el-col>
           <el-col
             :span="12"
-            v-if="newDatasource.type === 'postgresql' || newDatasource.type === 'oracle'"
+            v-if="newDatasource.type === 'postgresql' || newDatasource.type === 'oracle' || newDatasource.type === 'trino'"
           >
             <div class="form-item">
               <label>Schema 名 *</label>
               <el-input
                 v-model="schemaName"
-                :placeholder="newDatasource.type === 'postgresql' ? '例如：public' : '例如：SYSTEM'"
+                :placeholder="newDatasource.type === 'trino' ? '例如：default' : newDatasource.type === 'postgresql' ? '例如：public' : '例如：SYSTEM'"
                 size="large"
               />
             </div>
@@ -456,12 +461,17 @@
     <el-row :gutter="20">
       <el-col :span="12">
         <div class="form-item">
-          <label v-if="editingDatasource.type === 'postgresql'">数据库名 *</label>
+          <label v-if="editingDatasource.type === 'trino'">Catalog *</label>
+          <label v-else-if="editingDatasource.type === 'postgresql'">数据库名 *</label>
           <label v-else>数据库名 *</label>
           <el-input
             v-model="editingDatasource.databaseName"
             :placeholder="
-              editingDatasource.type === 'postgresql' ? '例如：postgres' : '请输入数据库名称'
+              editingDatasource.type === 'trino'
+                ? '例如：hive'
+                : editingDatasource.type === 'postgresql'
+                  ? '例如：postgres'
+                  : '请输入数据库名称'
             "
             size="large"
           />
@@ -469,13 +479,13 @@
       </el-col>
       <el-col
         :span="12"
-        v-if="editingDatasource.type === 'postgresql' || editingDatasource.type === 'oracle'"
+        v-if="editingDatasource.type === 'postgresql' || editingDatasource.type === 'oracle' || editingDatasource.type === 'trino'"
       >
         <div class="form-item">
           <label>Schema 名 *</label>
           <el-input
             v-model="schemaNameEdit"
-            :placeholder="editingDatasource.type === 'postgresql' ? '例如：public' : '例如：SYSTEM'"
+            :placeholder="editingDatasource.type === 'trino' ? '例如：default' : editingDatasource.type === 'postgresql' ? '例如：public' : '例如：SYSTEM'"
             size="large"
           />
         </div>
@@ -973,7 +983,7 @@
       const editDialogVisible: Ref<boolean> = ref(false);
       const editingDatasource: Ref<Datasource> = ref({} as Datasource);
 
-      // PostgreSQL/Oracle 额外的schema字段
+      // PostgreSQL、Oracle、Trino 额外的 schema 字段
       const schemaName: Ref<string> = ref('');
       const schemaNameEdit: Ref<string> = ref('');
 
@@ -1399,6 +1409,9 @@
         await addDatasourceToAgent(datasourceId);
       };
 
+      const requiresSchema = (type: string | undefined): boolean =>
+        type === 'postgresql' || type === 'oracle' || type === 'trino';
+
       const validateDatasourceForm = (
         datasourceForm: Datasource,
         needsSchema: boolean = false,
@@ -1443,8 +1456,7 @@
       });
 
       const createNewDatasource = async () => {
-        const needsSchema =
-          newDatasource.value.type === 'postgresql' || newDatasource.value.type === 'oracle';
+        const needsSchema = requiresSchema(newDatasource.value.type);
         const formErrors: string[] = validateDatasourceForm(
           newDatasource.value,
           needsSchema,
@@ -1455,7 +1467,7 @@
           return;
         }
         try {
-          // 如果是PostgreSQL或Oracle，合并数据库名和schema名
+          // 统一将数据库名（或 Trino Catalog）与 Schema 持久化为 name|schema。
           if (needsSchema && schemaName.value) {
             newDatasource.value.databaseName = `${newDatasource.value.databaseName}|${schemaName.value}`;
           }
@@ -1475,12 +1487,13 @@
       };
       const editDatasource = (row: Datasource) => {
         editingDatasource.value = JSON.parse(JSON.stringify(row));
-        // 如果是PostgreSQL或Oracle，分离数据库名和schema名
-        const needsSchema =
-          editingDatasource.value.type === 'postgresql' ||
-          editingDatasource.value.type === 'oracle';
+        // 从持久化的 name|schema 还原编辑表单；兼容早期 Trino 的 catalog/schema 格式。
+        const needsSchema = requiresSchema(editingDatasource.value.type);
         if (needsSchema && editingDatasource.value.databaseName) {
-          const parts = editingDatasource.value.databaseName.split('|');
+          const separator = editingDatasource.value.type === 'trino' && !editingDatasource.value.databaseName.includes('|')
+            ? '/'
+            : '|';
+          const parts = editingDatasource.value.databaseName.split(separator);
           if (parts.length === 2) {
             editingDatasource.value.databaseName = parts[0];
             schemaNameEdit.value = parts[1];
@@ -1494,9 +1507,7 @@
       };
 
       const saveEditDatasource = async () => {
-        const needsSchema =
-          editingDatasource.value.type === 'postgresql' ||
-          editingDatasource.value.type === 'oracle';
+        const needsSchema = requiresSchema(editingDatasource.value.type);
         const formErrors: string[] = validateDatasourceForm(
           editingDatasource.value,
           needsSchema,
@@ -1508,7 +1519,7 @@
         }
 
         try {
-          // 如果是PostgreSQL或Oracle，合并数据库名和schema名
+          // 统一将数据库名（或 Trino Catalog）与 Schema 持久化为 name|schema。
           if (needsSchema && schemaNameEdit.value) {
             editingDatasource.value.databaseName = `${editingDatasource.value.databaseName}|${schemaNameEdit.value}`;
           }

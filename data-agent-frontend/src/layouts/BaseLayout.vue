@@ -69,7 +69,6 @@
     setup() {
       const router = useRouter();
       const currentUser = computed(() => authService.getStoredUser());
-
       // 导航方法
       const goToAgentList = () => {
         router.push('/agents');
